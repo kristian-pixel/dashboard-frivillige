@@ -41,7 +41,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const DATA_URL='fetch("frivillige_dashboard_2026.csv")';
+const DATA_URL = 'frivillige_dashboard_2026.csv';
 const MIN_GROUP=5;
 let agg=null, charts={}, map, markers=[];
 const $=id=>document.getElementById(id);
@@ -50,18 +50,60 @@ function norm(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}
 function findCol(cols,names){let n=cols.map(c=>[c,norm(c)]); for(const want of names){const w=norm(want); const hit=n.find(x=>x[1]===w)||n.find(x=>x[1].includes(w)); if(hit) return hit[0]} return null}
 function parseYear(v){ if(v===null||v===undefined||String(v).trim()==='') return null; if(v instanceof Date && !isNaN(v)) return v.getFullYear(); let s=String(v).trim(); let num=Number(s.replace(',','.')); if(!isNaN(num)&&num>25000&&num<80000){let d=new Date(Math.round((num-25569)*86400*1000)); return d.getUTCFullYear()} if(/^\d{4}$/.test(s)) return Number(s); let m=s.match(/(\d{2,4})$/); if(m){let y=Number(m[1]); return y<100?2000+y:y} return null}
 function cleanReason(s){s=norm(s); if(!s) return ''; if(s.includes('solgt')&&s.includes('båd')) return 'Solgt båd'; if(s.includes('død')||s.includes('afgået')) return 'Dødsfald'; if(s.includes('pris')||s.includes('dyr')) return 'Pris'; if(s.includes('flyt')) return 'Flytning'; if(s.includes('bruger ikke')||s.includes('ikke brug')) return 'Bruger ikke ydelsen'; return 'Andet'}
+
+function getRegionFromPostnr(postnr){
+  const p=parseInt(String(postnr||'').trim(),10);
+  if(!Number.isFinite(p)) return 'Ukendt';
+  if((p>=1000&&p<=2999)||(p>=3000&&p<=3699)||(p>=3700&&p<=3799)) return 'Hovedstaden';
+  if(p>=4000&&p<=4999) return 'Sjælland';
+  if((p>=5000&&p<=5999)||(p>=6000&&p<=6999)) return 'Syddanmark';
+  if(p>=7000&&p<=8999) return 'Midtjylland';
+  if(p>=9000&&p<=9999) return 'Nordjylland';
+  return 'Ukendt';
+}
 async function dawaPost(postnr){let p=String(postnr||'').trim().padStart(4,'0'); try{let r=await fetch('https://api.dataforsyningen.dk/postnumre/'+encodeURIComponent(p)); if(!r.ok) return null; let j=await r.json(); return {postnr:p, by:j.navn||'', kommune:j.kommuner?.[0]?.navn||'Ukendt', region:j.kommuner?.[0]?.region?.navn||'Ukendt', lat:j.visueltcenter?.[1]||null, lon:j.visueltcenter?.[0]||null};}catch(e){return null}}
 async function mapPostnums(rows, postCol){let unique=[...new Set(rows.map(r=>String(r[postCol]||'').trim().padStart(4,'0')).filter(p=>/^\d{4}$/.test(p)))]; let m={}; for(let i=0;i<unique.length;i++){ $('status').innerHTML='Slår postnumre op i DAWA: '+(i+1)+' / '+unique.length; let info= await dawaPost(unique[i]); if(info) m[unique[i]]=info;} return m}
 async function buildAgg(rows){let years=new Set(), byMun={}, invalid=0; const cols=Object.keys(rows[0]||{});
-let postCol=findCol(cols,['Postnr','Postnummer','zip']); let inCol=findCol(cols,['Indmeldt år','Indmeldt dato:','Indmeldt dato','indmeldt']); let outCol=findCol(cols,['Udmeldt år','Udmeldt dato:','Udmeldt dato','udmeldt']); let reasonCol=findCol(cols,['Udmeldt årsag:','Udmeldt årsag','årsag']); let kommuneCol=findCol(cols,['Kommune']); let regionCol=findCol(cols,['Region']);
+let postCol=findCol(cols,['Postnr','Postnummer','zip']); let byCol=findCol(cols,['Bynavn','By','Postdistrikt']); let inCol=findCol(cols,['Indmeldt år','Indmeldt dato:','Indmeldt dato','indmeldt']); let outCol=findCol(cols,['Udmeldt år','Udmeldt dato:','Udmeldt dato','udmeldt']); let reasonCol=findCol(cols,['Udmeldt årsag:','Udmeldt årsag','årsag']); let kommuneCol=findCol(cols,['Kommune']); let regionCol=findCol(cols,['Region']);
 if(!postCol||!inCol) throw new Error('Mangler mindst Postnr og Indmeldt dato/år i Excel-filen.');
 let postMap=await mapPostnums(rows,postCol); let members=[];
-rows.forEach(r=>{let post=String(r[postCol]||'').trim().padStart(4,'0'); if(!/^\d{4}$/.test(post)){invalid++; return} let info=postMap[post]; if(!info){invalid++; return} let inY=parseYear(r[inCol]); let outY=parseYear(r[outCol]); if(!inY || inY<1900 || inY>currentYear+1){invalid++; return} if(outY && outY<inY){invalid++; return} let mun=String(r[kommuneCol]||info.kommune||'Ukendt').trim(); let reg=String(r[regionCol]||info.region||'Ukendt').trim(); let reason=cleanReason(r[reasonCol]); years.add(inY); if(outY) years.add(outY); if(!byMun[mun]) byMun[mun]={kommune:mun,region:reg,lat:info.lat,lon:info.lon,totalRows:0,byYear:{},newByYear:{},lostByYear:{},reasons:{}}; let o=byMun[mun]; o.totalRows++; o.newByYear[inY]=(o.newByYear[inY]||0)+1; if(outY){o.lostByYear[outY]=(o.lostByYear[outY]||0)+1; if(reason) o.reasons[reason]=(o.reasons[reason]||0)+1;} members.push({mun,inY,outY}); });
+rows.forEach(r=>{let post=String(r[postCol]||'').trim().padStart(4,'0'); if(!/^\d{4}$/.test(post)){invalid++; return} let info=postMap[post]||{}; let inY=parseYear(r[inCol]); let outY=parseYear(r[outCol]); if(!inY || inY<1900 || inY>currentYear+1){invalid++; return} if(outY && outY<inY){invalid++; return} let fallbackName=String((kommuneCol&&r[kommuneCol])||(byCol&&r[byCol])||info.kommune||('Postnr. '+post)).trim(); let mun=String((kommuneCol&&r[kommuneCol])||info.kommune||fallbackName||'Ukendt').trim(); let reg=String((regionCol&&r[regionCol])||info.region||getRegionFromPostnr(post)||'Ukendt').trim(); let reason=cleanReason(r[reasonCol]); years.add(inY); if(outY) years.add(outY); if(!byMun[mun]) byMun[mun]={kommune:mun,region:reg,lat:info.lat||null,lon:info.lon||null,totalRows:0,byYear:{},newByYear:{},lostByYear:{},reasons:{}}; let o=byMun[mun]; o.totalRows++; o.newByYear[inY]=(o.newByYear[inY]||0)+1; if(outY){o.lostByYear[outY]=(o.lostByYear[outY]||0)+1; if(reason) o.reasons[reason]=(o.reasons[reason]||0)+1;} members.push({mun,inY,outY}); });
 let ys=[...years].filter(y=>y>=2000&&y<=currentYear+1).sort((a,b)=>a-b); if(!ys.length) ys=[currentYear];
 Object.values(byMun).forEach(o=>{ys.forEach(y=>{o.byYear[y]=members.filter(m=>m.mun===o.kommune && m.inY<=y && (!m.outY||m.outY>y)).length;});});
 let municipalities=Object.values(byMun).filter(o=>Math.max(...Object.values(o.byYear))>=MIN_GROUP).sort((a,b)=>a.kommune.localeCompare(b.kommune,'da'));
-return {generated:new Date().toISOString(), minGroup:MIN_GROUP, years:ys, municipalities, meta:{rows:rows.length, invalid, suppressed:Object.keys(byMun).length-municipalities.length, note:'Aggregeret i browser. Vennenr/navn/adresse bruges ikke.'}};}
-async function loadWorkbook(){try{$('loadBox').className='ok'; $('loadBox').textContent='Indlæser Excel-fil…'; let r=await fetch(DATA_URL,{cache:'no-store'}); if(!r.ok) throw new Error('Kunne ikke hente filen: HTTP '+r.status); let buf=await r.arrayBuffer(); let wb=XLSX.read(buf,{type:'array',cellDates:true}); let ws=wb.Sheets[wb.SheetNames[0]]; let rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false}); $('loadBox').textContent='Excel-fil læst. Behandler data…'; agg=await buildAgg(rows); fillControls(); render(); $('loadBox').textContent='Data indlæst';}catch(e){$('loadBox').className='warn'; $('loadBox').innerHTML='<b>Kunne ikke indlæse data.</b><br>'+e.message+'<br><br>Hvis siden ikke ligger på dsrs.dk, kan browseren blokere filen pga. CORS.'; console.error(e);}}
+return {generated:new Date().toISOString(), minGroup:MIN_GROUP, years:ys, municipalities, meta:{rows:rows.length, invalid, suppressed:Object.keys(byMun).length-municipalities.length, note:'Aggregeret i browser. Vennenr/navn/adresse bruges ikke. Region findes via postnummer, også hvis DAWA ikke svarer.'}};}
+async function loadWorkbook(){
+  try{
+    $('loadBox').className='ok';
+    $('loadBox').textContent='Indlæser datafil…';
+
+    const r = await fetch(DATA_URL,{cache:'no-store'});
+    if(!r.ok) throw new Error('Kunne ikke hente filen: HTTP '+r.status+' – tjek at '+DATA_URL+' ligger i samme GitHub-repo/mappe som index.html');
+
+    let wb;
+    if(DATA_URL.toLowerCase().endsWith('.csv')){
+      const text = await r.text();
+      wb = XLSX.read(text,{type:'string',cellDates:true});
+    } else {
+      const buf = await r.arrayBuffer();
+      wb = XLSX.read(buf,{type:'array',cellDates:true});
+    }
+
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+    if(!rows.length) throw new Error('Datafilen er tom eller kunne ikke læses.');
+
+    $('loadBox').textContent='Datafil læst. Behandler data…';
+    agg=await buildAgg(rows);
+    fillControls();
+    render();
+    $('loadBox').textContent='Data indlæst fra '+DATA_URL;
+  }catch(e){
+    $('loadBox').className='warn';
+    $('loadBox').innerHTML='<b>Kunne ikke indlæse data.</b><br>'+e.message+'<br><br>Læg <b>index.html</b> og <b>frivillige_dashboard_2026.csv</b> i samme GitHub-repo/mappe. Filnavnet skal matche præcist.';
+    console.error(e);
+  }
+}
 function fillControls(){
 let previous=[...$('municipality').selectedOptions].map(o=>o.value);
 let reg=$('region').value;

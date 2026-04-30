@@ -1,172 +1,202 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="da">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>DSRS medlemsdashboard – kommune</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<meta charset="UTF-8">
+<title>DSRS Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-:root{--navy:#001F3F;--orange:#FF6A00;--bg:#f4f7fb;--card:#fff;--text:#142033;--muted:#64748b;--border:#d9e2ef;--red:#b42318;--green:#16703a}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-.header{background:linear-gradient(135deg,var(--navy),#06345f);color:white;padding:22px 26px}.header h1{margin:0;font-size:24px}.header p{margin:6px 0 0;color:#dbeafe}.wrap{display:grid;grid-template-columns:330px 1fr;gap:18px;padding:18px;max-width:1500px;margin:0 auto}.panel,.card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 10px 25px rgba(15,23,42,.06)}.panel{padding:18px;height:max-content;position:sticky;top:12px}.card{padding:16px}.grid{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin-bottom:14px}.kpi .label{color:var(--muted);font-size:13px}.kpi .num{font-size:30px;font-weight:800;color:var(--navy);line-height:1.1}.kpi .sub{font-size:12px;color:var(--muted);margin-top:4px}label{font-weight:700;font-size:13px;margin-top:12px;display:block}select,button{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:white;font-size:14px}button{cursor:pointer;background:var(--navy);color:white;border:none;font-weight:800;margin-top:10px}.hint{font-size:12px;color:var(--muted);line-height:1.45}.warn{background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;border-radius:12px;padding:10px;font-size:13px;margin:10px 0}.ok{background:#ecfdf3;border:1px solid #bbf7d0;color:#14532d;border-radius:12px;padding:10px;font-size:13px;margin:10px 0}.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}.wide{grid-column:1/-1}.chartbox{height:310px}.tablewrap{max-height:320px;overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid var(--border);padding:8px;text-align:left}th{background:#f8fafc;position:sticky;top:0}#map{height:360px;border-radius:14px;border:1px solid var(--border)}.small{font-size:12px;color:var(--muted)}.source{word-break:break-all;background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:10px;font-size:12px;color:#334155} select[multiple]{height:auto;min-height:260px}@media(max-width:1000px){.wrap{grid-template-columns:1fr}.panel{position:static}.grid{grid-template-columns:1fr 1fr}.charts{grid-template-columns:1fr}}@media(max-width:600px){.grid{grid-template-columns:1fr}}
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f5f7fa;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 16px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.kpi {
+  font-size: 28px;
+  font-weight: bold;
+  color: #001F3F;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: #666;
+}
+
+select {
+  padding: 8px;
+  border-radius: 6px;
+}
 </style>
 </head>
+
 <body>
-<header class="header"><h1>DSRS medlemsdashboard</h1><p>Kommuneoverblik med mulighed for at vælge én eller flere kommuner.</p></header>
-<main class="wrap">
-<aside class="panel">
-  <h2 style="margin-top:0">Filtrering</h2>
-  <div id="loadBox" class="ok">Indlæser medlemsdata…</div>
-  <div class="ok"><b>Betalingslogik:</b> Hovedtallet viser kun medlemmer hvor <b>Sidste salg dato = 2026</b>. Historikgrafer bruger indmeldt/udmeldt år.</div>
-  <label>Region</label><select id="region"><option value="ALL">Alle regioner</option></select>
-  <label>Vælg kommune(r)</label><select id="municipality" multiple size="12"><option>Indlæser data…</option></select><p class="hint">Hold Ctrl/Cmd nede for at vælge flere kommuner. Vælges ingen, vises alle kommuner i den valgte region.</p>
-  <div id="status" class="hint" style="margin-top:12px"></div>
-</aside>
-<section>
-  <div class="grid">
-    <div class="card kpi"><div class="label">Betalende medlemmer 2026</div><div id="kpiActive" class="num">–</div><div id="kpiActiveSub" class="sub"></div></div>
-    <div class="card kpi"><div class="label">Nye i seneste år</div><div id="kpiNew" class="num">–</div><div id="kpiNewSub" class="sub">Indmeldt i seneste dataår</div></div>
-    <div class="card kpi"><div class="label">Udmeldte i seneste år</div><div id="kpiLost" class="num">–</div><div id="kpiLostSub" class="sub">Udmeldt i seneste dataår</div></div>
-    <div class="card kpi"><div class="label">Churn</div><div id="kpiChurn" class="num">–</div><div class="sub">Udmeldte / medlemmer ved årets start</div></div>
+
+<div class="container">
+
+<!-- 🔥 DISCLAIMER -->
+<div style="margin-bottom:20px;padding:16px 18px;background:#001F3F;border-left:6px solid #FF6A00;border-radius:12px;color:#ffffff;font-size:14px;line-height:1.5;box-shadow:0 6px 18px rgba(0,0,0,0.12);">
+  <div style="display:flex;gap:12px;">
+    <div style="font-size:22px;">ℹ️</div>
+    <div>
+      <div style="font-weight:700;color:#FF6A00;">Datagrundlag</div>
+      Medlemsdata er baseret på registreret bopælskommune. Oplysningerne siger derfor ikke nødvendigvis noget om, hvor medlemmernes både er placeret, eller hvor de benytter deres medlemskab i praksis. Tallene skal læses som en geografisk fordeling af medlemmer – ikke som en direkte indikator for lokal sejladsaktivitet.
+    </div>
   </div>
-  <div class="charts">
-    <div class="card wide"><h3>Medlemsudvikling – seneste 6 år</h3><div class="chartbox"><canvas id="chartTrend"></canvas></div></div>
-    <div class="card"><h3>Nye vs. udmeldte</h3><div class="chartbox"><canvas id="chartFlow"></canvas></div></div>
-    <div class="card"><h3>Udmeldelsesårsager</h3><div class="chartbox"><canvas id="chartReasons"></canvas></div></div>
-    <div class="card wide"><h3>Kort over kommuner</h3><div id="map"></div><p class="small">Cirkler er placeret ved kommunens postnummerbaserede centrum. Ikke individuelle medlemmer.</p></div>
-    <div class="card wide"><h3>Top kommuner i valgt region</h3><div class="tablewrap"><table id="topTable"><thead><tr><th>Kommune</th><th>Aktive</th><th>Nye</th><th>Churn</th></tr></thead><tbody></tbody></table></div></div>
-  </div>
-</section>
-</main>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</div>
+
+<!-- FILTER -->
+<div class="card">
+  <label>Vælg kommune:</label>
+  <select id="kommuneSelect"></select>
+</div>
+
+<!-- KPI -->
+<div class="card">
+  <div class="kpi" id="kpiActive">0</div>
+  <div class="kpi-label">Betalende medlemmer (2026)</div>
+</div>
+
+<!-- DEMOGRAFI -->
+<div class="card" id="demografiBox"></div>
+
+<!-- GRAF -->
+<div class="card">
+  <canvas id="chart"></canvas>
+</div>
+
+</div>
+
 <script>
-const DATA_URL = 'frivillige_dashboard_2026.csv';
-const DASHBOARD_YEAR = 2026; // Fastlåst til kontingentåret 2026. Fremtidige år i data vises ikke.
-const MIN_GROUP=5;
-let agg=null, charts={}, map, markers=[];
-const $=id=>document.getElementById(id);
-const currentYear=DASHBOARD_YEAR;
-function norm(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ')}
-function findCol(cols,names){let n=cols.map(c=>[c,norm(c)]); for(const want of names){const w=norm(want); const hit=n.find(x=>x[1]===w)||n.find(x=>x[1].includes(w)); if(hit) return hit[0]} return null}
-function parseYear(v){ if(v===null||v===undefined||String(v).trim()==='') return null; if(v instanceof Date && !isNaN(v)) return v.getFullYear(); let s=String(v).trim(); let num=Number(s.replace(',','.')); if(!isNaN(num)&&num>25000&&num<80000){let d=new Date(Math.round((num-25569)*86400*1000)); return d.getUTCFullYear()} if(/^\d{4}$/.test(s)) return Number(s); let m=s.match(/(\d{2,4})$/); if(m){let y=Number(m[1]); return y<100?2000+y:y} return null}
-function cleanReason(s){s=norm(s); if(!s) return ''; if(s.includes('solgt')&&s.includes('båd')) return 'Solgt båd'; if(s.includes('død')||s.includes('afgået')) return 'Dødsfald'; if(s.includes('pris')||s.includes('dyr')) return 'Pris'; if(s.includes('flyt')) return 'Flytning'; if(s.includes('bruger ikke')||s.includes('ikke brug')) return 'Bruger ikke ydelsen'; return 'Andet'}
 
-function getRegionFromPostnr(postnr){
-  const p=parseInt(String(postnr||'').trim(),10);
-  if(!Number.isFinite(p)) return 'Ukendt';
-  if((p>=1000&&p<=2999)||(p>=3000&&p<=3699)||(p>=3700&&p<=3799)) return 'Hovedstaden';
-  if(p>=4000&&p<=4999) return 'Sjælland';
-  if((p>=5000&&p<=5999)||(p>=6000&&p<=6999)) return 'Syddanmark';
-  if(p>=7000&&p<=8999) return 'Midtjylland';
-  if(p>=9000&&p<=9999) return 'Nordjylland';
-  return 'Ukendt';
+const CURRENT_YEAR = 2026;
+const DATA_URL = "frivillige_dashboard_2026.csv";
+const DEMO_URL = "kommune_demografi.csv";
+
+let rows = [];
+let demo = {};
+
+function findCol(cols, names) {
+  return cols.findIndex(c => names.some(n => c.toLowerCase().includes(n)));
 }
-async function dawaPost(postnr){let p=String(postnr||'').trim().padStart(4,'0'); try{let r=await fetch('https://api.dataforsyningen.dk/postnumre/'+encodeURIComponent(p)); if(!r.ok) return null; let j=await r.json(); return {postnr:p, by:j.navn||'', kommune:j.kommuner?.[0]?.navn||'Ukendt', region:j.kommuner?.[0]?.region?.navn||'Ukendt', lat:j.visueltcenter?.[1]||null, lon:j.visueltcenter?.[0]||null};}catch(e){return null}}
-async function mapPostnums(rows, postCol){let unique=[...new Set(rows.map(r=>String(r[postCol]||'').trim().padStart(4,'0')).filter(p=>/^\d{4}$/.test(p)))]; let m={}; for(let i=0;i<unique.length;i++){ $('status').innerHTML='Slår postnumre op i DAWA: '+(i+1)+' / '+unique.length; let info= await dawaPost(unique[i]); if(info) m[unique[i]]=info;} return m}
-async function buildAgg(rows){let years=new Set(), byMun={}, invalid=0; const cols=Object.keys(rows[0]||{});
-let postCol=findCol(cols,['Postnr','Postnummer','zip']); let byCol=findCol(cols,['Bynavn','By','Postdistrikt']); let inCol=findCol(cols,['Indmeldt år','Indmeldt dato:','Indmeldt dato','indmeldt']); let outCol=findCol(cols,['Udmeldt år','Udmeldt dato:','Udmeldt dato','udmeldt']); let reasonCol=findCol(cols,['Udmeldt årsag:','Udmeldt årsag','årsag']); let payCol=findCol(cols,['Sidste salg dato','Sidste betalingsår','Betalingsår','Seneste betaling','sidste salg']); let kommuneCol=findCol(cols,['Kommune']); let regionCol=findCol(cols,['Region']);
-if(!postCol||!inCol) throw new Error('Mangler mindst Postnr og Indmeldt dato/år i CSV-filen.');
-if(!payCol) console.warn('Kolonnen Sidste salg dato/Sidste betalingsår blev ikke fundet. Betalende 2026 bliver derfor 0.');
-let postMap=await mapPostnums(rows,postCol); let members=[];
-rows.forEach(r=>{let post=String(r[postCol]||'').trim().padStart(4,'0'); if(!/^\d{4}$/.test(post)){invalid++; return} let info=postMap[post]||{}; let inY=parseYear(r[inCol]); let outY=parseYear(r[outCol]); if(!inY || inY<1900){invalid++; return} if(outY && outY<inY){invalid++; return} let fallbackName=String((kommuneCol&&r[kommuneCol])||(byCol&&r[byCol])||info.kommune||('Postnr. '+post)).trim(); let mun=String((kommuneCol&&r[kommuneCol])||info.kommune||fallbackName||'Ukendt').trim(); let reg=String((regionCol&&r[regionCol])||info.region||getRegionFromPostnr(post)||'Ukendt').trim(); let reason=cleanReason(r[reasonCol]); years.add(inY); if(outY) years.add(outY); if(!byMun[mun]) byMun[mun]={kommune:mun,region:reg,lat:info.lat||null,lon:info.lon||null,totalRows:0,byYear:{},paidByYear:{},newByYear:{},lostByYear:{},reasons:{}}; let o=byMun[mun]; o.totalRows++; o.newByYear[inY]=(o.newByYear[inY]||0)+1; let payY=payCol?parseYear(r[payCol]):null; if(payY){ years.add(payY); o.paidByYear[payY]=(o.paidByYear[payY]||0)+1; } if(outY){o.lostByYear[outY]=(o.lostByYear[outY]||0)+1; if(reason) o.reasons[reason]=(o.reasons[reason]||0)+1;} members.push({mun,inY,outY,payY}); });
-let ys=[...years].filter(y=>y>=2000&&y<=DASHBOARD_YEAR).sort((a,b)=>a-b); if(!ys.includes(DASHBOARD_YEAR)) ys.push(DASHBOARD_YEAR); ys=[...new Set(ys)].sort((a,b)=>a-b); if(!ys.length) ys=[DASHBOARD_YEAR];
-Object.values(byMun).forEach(o=>{ys.forEach(y=>{o.byYear[y]=members.filter(m=>m.mun===o.kommune && m.inY<=y && (!m.outY||m.outY>y)).length;});});
-let municipalities=Object.values(byMun).filter(o=>Math.max((o.paidByYear[DASHBOARD_YEAR]||0), ...Object.values(o.byYear))>=MIN_GROUP).sort((a,b)=>a.kommune.localeCompare(b.kommune,'da'));
-return {generated:new Date().toISOString(), minGroup:MIN_GROUP, years:ys, municipalities, meta:{rows:rows.length, invalid, suppressed:Object.keys(byMun).length-municipalities.length, note:'Aggregeret i browser. Vennenr/navn/adresse bruges ikke. Region findes via postnummer, også hvis DAWA ikke svarer.'}};}
-async function loadWorkbook(){
-  try{
-    $('loadBox').className='ok';
-    $('loadBox').textContent='Indlæser datafil…';
 
-    const r = await fetch(DATA_URL,{cache:'no-store'});
-    if(!r.ok) throw new Error('Kunne ikke hente filen: HTTP '+r.status+' – tjek at '+DATA_URL+' ligger i samme GitHub-repo/mappe som index.html');
+// LOAD DATA
+async function loadData() {
+  const res = await fetch(DATA_URL);
+  const text = await res.text();
+  const lines = text.split("\n").map(l => l.split(","));
 
-    let wb;
-    if(DATA_URL.toLowerCase().endsWith('.csv')){
-      const buf = await r.arrayBuffer();
-      let text;
-      try { text = new TextDecoder('utf-8', {fatal:true}).decode(buf); }
-      catch(e) { text = new TextDecoder('windows-1252').decode(buf); }
-      wb = XLSX.read(text,{type:'string',cellDates:true});
-    } else {
-      const buf = await r.arrayBuffer();
-      wb = XLSX.read(buf,{type:'array',cellDates:true});
-    }
+  const cols = lines[0];
+  const data = lines.slice(1);
 
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
-    if(!rows.length) throw new Error('Datafilen er tom eller kunne ikke læses.');
+  const postCol = findCol(cols, ["post"]);
+  const indCol = findCol(cols, ["indmeldt"]);
+  const udCol = findCol(cols, ["udmeldt"]);
+  const betaltCol = findCol(cols, ["salg"]);
 
-    $('loadBox').textContent='Datafil læst. Behandler data…';
-    agg=await buildAgg(rows);
-    fillControls();
-    render();
-    $('loadBox').textContent='Data indlæst fra '+DATA_URL;
-  }catch(e){
-    $('loadBox').className='warn';
-    $('loadBox').innerHTML='<b>Kunne ikke indlæse data.</b><br>'+e.message+'<br><br>Læg <b>index.html</b> og <b>frivillige_dashboard_2026.csv</b> i samme GitHub-repo/mappe. Filnavnet skal matche præcist.';
-    console.error(e);
+  rows = data.map(r => ({
+    kommune: r[postCol],
+    ind: parseInt(r[indCol]),
+    ud: parseInt(r[udCol]),
+    betalt: parseInt(r[betaltCol])
+  }));
+
+  init();
+}
+
+// LOAD DEMOGRAFI
+async function loadDemo() {
+  const res = await fetch(DEMO_URL);
+  const text = await res.text();
+  const lines = text.split("\n").map(l => l.split(","));
+
+  lines.slice(1).forEach(r => {
+    demo[r[0]] = r;
+  });
+}
+
+// INIT
+function init() {
+  const select = document.getElementById("kommuneSelect");
+  const kommuner = [...new Set(rows.map(r => r.kommune))];
+
+  kommuner.forEach(k => {
+    const opt = document.createElement("option");
+    opt.value = k;
+    opt.textContent = k;
+    select.appendChild(opt);
+  });
+
+  select.onchange = update;
+  update();
+}
+
+// UPDATE
+function update() {
+  const kommune = document.getElementById("kommuneSelect").value;
+
+  const filtered = rows.filter(r => r.kommune === kommune);
+
+  const active = filtered.filter(r => r.betalt === CURRENT_YEAR).length;
+
+  document.getElementById("kpiActive").textContent = active;
+
+  // DEMOGRAFI
+  if (demo[kommune]) {
+    const d = demo[kommune];
+    document.getElementById("demografiBox").innerHTML = `
+      <strong>${kommune}</strong><br>
+      Indbyggere: ${d[1]}<br>
+      Kvinder: ${d[2]}%<br>
+      Mænd: ${d[3]}%
+    `;
   }
-}
-function fillControls(){
-let previous=[...$('municipality').selectedOptions].map(o=>o.value);
-let reg=$('region').value;
-let regs=['ALL',...[...new Set(agg.municipalities.map(m=>m.region))].sort()];
-$('region').innerHTML=regs.map(r=>`<option value="${r}">${r==='ALL'?'Alle regioner':r}</option>`).join('');
-$('region').value=regs.includes(reg)?reg:'ALL';
-let list=agg.municipalities.filter(m=>$('region').value==='ALL'||m.region===$('region').value);
-$('municipality').innerHTML=list.map(m=>`<option value="${m.kommune}">${m.kommune}</option>`).join('');
-[...$('municipality').options].forEach(o=>{o.selected=previous.includes(o.value)});
-}
-function selectedMunicipalities(list){
-  let picked=[...$('municipality').selectedOptions].map(o=>o.value);
-  if(!picked.length) return list;
-  return list.filter(m=>picked.includes(m.kommune));
-}
-function combineMunicipalities(items){
-  let label=items.length===1?items[0].kommune:items.length+' kommuner';
-  let region=items.length===1?items[0].region:'Samlet udvalg';
-  let out={kommune:label,region,lat:null,lon:null,byYear:{},paidByYear:{},newByYear:{},lostByYear:{},reasons:{}};
-  let latSum=0, lonSum=0, n=0;
-  for(const m of items){
-    if(m.lat&&m.lon){latSum+=m.lat; lonSum+=m.lon; n++;}
-    for(const y of agg.years){
-      out.byYear[y]=(out.byYear[y]||0)+(m.byYear[y]||0);
-      out.paidByYear[y]=(out.paidByYear[y]||0)+(m.paidByYear?.[y]||0);
-      out.newByYear[y]=(out.newByYear[y]||0)+(m.newByYear[y]||0);
-      out.lostByYear[y]=(out.lostByYear[y]||0)+(m.lostByYear[y]||0);
-    }
-    for(const [reason,count] of Object.entries(m.reasons||{})) out.reasons[reason]=(out.reasons[reason]||0)+count;
+
+  // GRAF
+  const years = [];
+  for (let y = CURRENT_YEAR - 5; y <= CURRENT_YEAR; y++) {
+    years.push(y);
   }
-  if(n){out.lat=latSum/n; out.lon=lonSum/n;}
-  return out;
+
+  const dataPoints = years.map(y => {
+    return filtered.filter(r =>
+      r.ind <= y && (!r.ud || r.ud > y)
+    ).length;
+  });
+
+  if (window.chart) window.chart.destroy();
+
+  window.chart = new Chart(document.getElementById("chart"), {
+    type: "line",
+    data: {
+      labels: years,
+      datasets: [{
+        label: "Medlemsbestand",
+        data: dataPoints,
+        borderColor: "#FF6A00"
+      }]
+    }
+  });
 }
-function pct(v){return isFinite(v)?(v*100).toFixed(1).replace('.',',')+' %':'–'} function fmt(n){return Number(n||0).toLocaleString('da-DK')}
-function latestYear(){return DASHBOARD_YEAR;}
-function displayYears(){let end=DASHBOARD_YEAR; let start=end-5; return Array.from({length:6},(_,i)=>start+i);}
-function chart(id,type,data,options={}){if(charts[id]) charts[id].destroy(); charts[id]=new Chart($(id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},...options}})}
-function render(){
-if(!agg) return;
-let y=latestYear();
-let years=displayYears();
-let list=agg.municipalities.filter(m=>$('region').value==='ALL'||m.region===$('region').value);
-let selected=selectedMunicipalities(list);
-if(!selected.length) selected=list;
-let sel=combineMunicipalities(selected);
-let start=sel.byYear[y-1]||0, active=sel.paidByYear[y]||0, ny=sel.newByYear[y]||0, lost=sel.lostByYear[y]||0;
-$('kpiActive').textContent=fmt(active); $('kpiNew').textContent=fmt(ny); $('kpiLost').textContent=fmt(lost); $('kpiChurn').textContent=pct(start?lost/start:NaN); $('kpiActiveSub').textContent=sel.kommune+' · '+sel.region+' · sidste salg dato = '+y; $('kpiNewSub').textContent='Indmeldt i '+y; $('kpiLostSub').textContent='Udmeldt i '+y;
-chart('chartTrend','line',{labels:years,datasets:[{label:'Medlemsbestand ud fra ind/udmeldelse',data:years.map(yy=>sel.byYear[yy]||0),tension:.25},{label:'Sidste betalingsår',data:years.map(yy=>sel.paidByYear[yy]||0),tension:.25}]});
-chart('chartFlow','bar',{labels:years,datasets:[{label:'Nye',data:years.map(yy=>sel.newByYear[yy]||0)},{label:'Udmeldte',data:years.map(yy=>sel.lostByYear[yy]||0)}]});
-let rs=Object.entries(sel.reasons).sort((a,b)=>b[1]-a[1]); if(!rs.length) rs=[['Ingen registrerede årsager',0]]; chart('chartReasons','bar',{labels:rs.map(r=>r[0]),datasets:[{label:'Antal',data:rs.map(r=>r[1])}]},{indexAxis:'y'});
-let tbody=$('topTable').querySelector('tbody'); tbody.innerHTML=list.map(m=>{let st=m.byYear[y-1]||0, a=m.paidByYear?.[y]||0, l=m.lostByYear[y]||0; return {m,a,n:m.newByYear[y]||0,c:st?l/st:NaN}}).sort((a,b)=>b.a-a.a).slice(0,20).map(x=>`<tr><td>${x.m.kommune}</td><td>${fmt(x.a)}</td><td>${fmt(x.n)}</td><td>${pct(x.c)}</td></tr>`).join('');
-renderMap(list,selected,y);
-$('status').innerHTML=`Data: ${fmt(agg.meta.rows)} rækker behandlet · ${fmt(agg.meta.invalid)} frasorteret · ${fmt(agg.meta.suppressed)} små kommuner skjult · minimumsgrænse ${agg.minGroup} · grafer viser ${years[0]}-${years[years.length-1]} · KPI viser betalende medlemmer ud fra Sidste salg dato = 2026.`;
-}
-function renderMap(list,selected,y){if(!map){map=L.map('map').setView([56,10],6); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);} markers.forEach(m=>map.removeLayer(m)); markers=[]; list.forEach(m=>{if(!m.lat||!m.lon) return; let val=m.paidByYear?.[y]||0; let isSelected=selected.some(s=>s.kommune===m.kommune); let marker=L.circleMarker([m.lat,m.lon],{radius:Math.max(6,Math.sqrt(val)*1.2),weight:isSelected?4:1,fillOpacity:isSelected?.65:.35}).bindPopup(`<b>${m.kommune}</b><br>Betalende ${DASHBOARD_YEAR}: ${fmt(val)}<br>Region: ${m.region}`); marker.addTo(map); markers.push(marker);}); if(selected.length===1 && selected[0].lat&&selected[0].lon) map.setView([selected[0].lat,selected[0].lon],9); else if(markers.length){let group=L.featureGroup(markers); map.fitBounds(group.getBounds().pad(.15));}}
-$('municipality').onchange=render; $('region').onchange=()=>{fillControls(); render();};
-loadWorkbook();
+
+// START
+loadDemo().then(loadData);
+
 </script>
+
 </body>
 </html>

@@ -41,7 +41,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const DATA_URL='https://dsrs.dk/sites/default/files/2026-04/frivillige_dashboard_2026.xlsx';
+const DATA_URL='fetch("frivillige_dashboard_2026.csv")';
 const MIN_GROUP=5;
 let agg=null, charts={}, map, markers=[];
 const $=id=>document.getElementById(id);

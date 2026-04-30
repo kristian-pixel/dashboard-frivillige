@@ -1,202 +1,70 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="da">
 <head>
-<meta charset="UTF-8">
-<title>DSRS Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f5f7fa;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 20px auto;
-  padding: 0 16px;
-}
-
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-}
-
-.kpi {
-  font-size: 28px;
-  font-weight: bold;
-  color: #001F3F;
-}
-
-.kpi-label {
-  font-size: 13px;
-  color: #666;
-}
-
-select {
-  padding: 8px;
-  border-radius: 6px;
-}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DSRS medlemsdashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--navy:#001F3F;--orange:#FF6A00;--bg:#F3F6FA;--card:#fff;--text:#08213F;--muted:#58708C;--border:#DCE6F1;--green:#E8F8EF;--greenBorder:#A8E3BE;--warn:#FFF7ED;--warnBorder:#FDBA74;}
+    *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    header{background:var(--navy);color:#fff;padding:24px 28px} header h1{margin:0;font-size:28px;line-height:1.1} header p{margin:8px 0 0;font-size:15px;color:#eaf2fb}
+    main{max-width:1320px;margin:0 auto;padding:24px 18px 48px}.grid{display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 28px rgba(0,31,63,.07);padding:18px}.card h2,.card h3{margin:0 0 14px}.card h2{font-size:24px}.card h3{font-size:18px}
+    .notice{margin-bottom:18px;background:var(--navy);border-left:7px solid var(--orange);color:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 10px 28px rgba(0,31,63,.18);display:flex;gap:14px;align-items:flex-start}.notice .icon{font-size:22px}.notice strong{display:block;color:var(--orange);margin-bottom:5px}.notice div:last-child{line-height:1.45;font-size:14px}
+    label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}select{width:100%;border:1px solid #CBD9EA;border-radius:10px;background:#fff;padding:10px 12px;font-size:14px}select[multiple]{height:245px}.hint{font-size:12px;line-height:1.45;color:var(--muted);margin-top:10px}.status{font-size:12px;padding:10px;border-radius:10px;margin:10px 0}.ok{background:var(--green);border:1px solid var(--greenBorder);color:#166534}.warn{background:var(--warn);border:1px solid var(--warnBorder);color:#9a3412}
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.kpi{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 10px 28px rgba(0,31,63,.06)}.kpi .label{font-size:13px;color:var(--muted);margin-bottom:6px}.kpi .value{font-size:30px;font-weight:800;color:var(--navy);line-height:1}.kpi .sub{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.35}
+    .charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}.wide{grid-column:1/-1}.chartbox{height:330px}.chartbox.small{height:290px}.profile{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.profile .metric{background:#F7FAFE;border:1px solid var(--border);border-radius:12px;padding:12px}.metric .mval{font-size:22px;font-weight:800;color:var(--navy)}.metric .mlab{font-size:12px;color:var(--muted);margin-top:4px}.footer-note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:14px}
+    table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;border-bottom:1px solid var(--border);padding:8px 6px}th{color:var(--muted);font-size:12px}
+    @media(max-width:950px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.charts{grid-template-columns:1fr}.profile{grid-template-columns:1fr 1fr}}
+    @media(max-width:560px){.kpis,.profile{grid-template-columns:1fr}header{padding:20px 16px}}
+  </style>
 </head>
-
 <body>
-
-<div class="container">
-
-<!-- 🔥 DISCLAIMER -->
-<div style="margin-bottom:20px;padding:16px 18px;background:#001F3F;border-left:6px solid #FF6A00;border-radius:12px;color:#ffffff;font-size:14px;line-height:1.5;box-shadow:0 6px 18px rgba(0,0,0,0.12);">
-  <div style="display:flex;gap:12px;">
-    <div style="font-size:22px;">ℹ️</div>
-    <div>
-      <div style="font-weight:700;color:#FF6A00;">Datagrundlag</div>
-      Medlemsdata er baseret på registreret bopælskommune. Oplysningerne siger derfor ikke nødvendigvis noget om, hvor medlemmernes både er placeret, eller hvor de benytter deres medlemskab i praksis. Tallene skal læses som en geografisk fordeling af medlemmer – ikke som en direkte indikator for lokal sejladsaktivitet.
-    </div>
-  </div>
-</div>
-
-<!-- FILTER -->
-<div class="card">
-  <label>Vælg kommune:</label>
-  <select id="kommuneSelect"></select>
-</div>
-
-<!-- KPI -->
-<div class="card">
-  <div class="kpi" id="kpiActive">0</div>
-  <div class="kpi-label">Betalende medlemmer (2026)</div>
-</div>
-
-<!-- DEMOGRAFI -->
-<div class="card" id="demografiBox"></div>
-
-<!-- GRAF -->
-<div class="card">
-  <canvas id="chart"></canvas>
-</div>
-
-</div>
-
+<header><h1>DSRS medlemsdashboard</h1><p>Kommuneoverblik med mulighed for at vælge én eller flere kommuner.</p></header>
+<main>
+  <div class="notice"><div class="icon">ℹ️</div><div><strong>Datagrundlag</strong>Medlemsdata er baseret på registreret bopælskommune. Oplysningerne siger derfor ikke nødvendigvis noget om, hvor medlemmernes både er placeret, eller hvor de benytter deres medlemskab i praksis. Tallene skal læses som en geografisk fordeling af medlemmer – ikke som en direkte indikator for lokal sejladsaktivitet.</div></div>
+  <section class="grid">
+    <aside class="card"><h2>Filtrering</h2><div id="loadStatus" class="status warn">Indlæser data…</div><label for="regionSelect">Region</label><select id="regionSelect"><option value="__ALL__">Alle regioner</option></select><label for="kommuneSelect">Vælg kommune(r)</label><select id="kommuneSelect" multiple><option>Indlæser…</option></select><div class="hint">Hold Ctrl/Cmd nede for at vælge flere kommuner. Vælges ingen, vises alle kommuner i den valgte region.</div><div id="dataInfo" class="hint"></div></aside>
+    <section>
+      <div class="kpis"><div class="kpi"><div class="label">Betalende medlemmer 2026</div><div id="kpiPaid" class="value">–</div><div id="kpiPaidSub" class="sub">Sidste salg dato = 2026</div></div><div class="kpi"><div class="label">Nye i 2026</div><div id="kpiNew" class="value">–</div><div class="sub">Indmeldt i 2026</div></div><div class="kpi"><div class="label">Udmeldte i 2026</div><div id="kpiLeft" class="value">–</div><div class="sub">Udmeldt i 2026</div></div><div class="kpi"><div class="label">Churn</div><div id="kpiChurn" class="value">–</div><div class="sub">Udmeldte / medlemmer ved årets start</div></div></div>
+      <div class="card wide" style="margin-bottom:14px"><h3>Kommuneprofil</h3><div id="profileBox" class="profile"></div><div class="footer-note" id="profileNote"></div></div>
+      <div class="charts"><div class="card wide"><h3>Medlemsudvikling – seneste 6 år</h3><div class="chartbox"><canvas id="chartMembers"></canvas></div></div><div class="card"><h3>Nye vs. udmeldte</h3><div class="chartbox small"><canvas id="chartFlow"></canvas></div></div><div class="card"><h3>Udmeldelsesårsager</h3><div class="chartbox small"><canvas id="chartReasons"></canvas></div></div><div class="card wide"><h3>Top kommuner i valgt region</h3><div style="overflow:auto"><table id="topTable"><thead><tr><th>Kommune</th><th>Betalende 2026</th><th>Nye 2026</th><th>Udmeldte 2026</th><th>Medl. pr. 1.000 borgere</th></tr></thead><tbody></tbody></table></div></div></div>
+    </section>
+  </section>
+</main>
 <script>
-
-const CURRENT_YEAR = 2026;
-const DATA_URL = "frivillige_dashboard_2026.csv";
-const DEMO_URL = "kommune_demografi.csv";
-
-let rows = [];
-let demo = {};
-
-function findCol(cols, names) {
-  return cols.findIndex(c => names.some(n => c.toLowerCase().includes(n)));
-}
-
-// LOAD DATA
-async function loadData() {
-  const res = await fetch(DATA_URL);
-  const text = await res.text();
-  const lines = text.split("\n").map(l => l.split(","));
-
-  const cols = lines[0];
-  const data = lines.slice(1);
-
-  const postCol = findCol(cols, ["post"]);
-  const indCol = findCol(cols, ["indmeldt"]);
-  const udCol = findCol(cols, ["udmeldt"]);
-  const betaltCol = findCol(cols, ["salg"]);
-
-  rows = data.map(r => ({
-    kommune: r[postCol],
-    ind: parseInt(r[indCol]),
-    ud: parseInt(r[udCol]),
-    betalt: parseInt(r[betaltCol])
-  }));
-
-  init();
-}
-
-// LOAD DEMOGRAFI
-async function loadDemo() {
-  const res = await fetch(DEMO_URL);
-  const text = await res.text();
-  const lines = text.split("\n").map(l => l.split(","));
-
-  lines.slice(1).forEach(r => {
-    demo[r[0]] = r;
-  });
-}
-
-// INIT
-function init() {
-  const select = document.getElementById("kommuneSelect");
-  const kommuner = [...new Set(rows.map(r => r.kommune))];
-
-  kommuner.forEach(k => {
-    const opt = document.createElement("option");
-    opt.value = k;
-    opt.textContent = k;
-    select.appendChild(opt);
-  });
-
-  select.onchange = update;
-  update();
-}
-
-// UPDATE
-function update() {
-  const kommune = document.getElementById("kommuneSelect").value;
-
-  const filtered = rows.filter(r => r.kommune === kommune);
-
-  const active = filtered.filter(r => r.betalt === CURRENT_YEAR).length;
-
-  document.getElementById("kpiActive").textContent = active;
-
-  // DEMOGRAFI
-  if (demo[kommune]) {
-    const d = demo[kommune];
-    document.getElementById("demografiBox").innerHTML = `
-      <strong>${kommune}</strong><br>
-      Indbyggere: ${d[1]}<br>
-      Kvinder: ${d[2]}%<br>
-      Mænd: ${d[3]}%
-    `;
-  }
-
-  // GRAF
-  const years = [];
-  for (let y = CURRENT_YEAR - 5; y <= CURRENT_YEAR; y++) {
-    years.push(y);
-  }
-
-  const dataPoints = years.map(y => {
-    return filtered.filter(r =>
-      r.ind <= y && (!r.ud || r.ud > y)
-    ).length;
-  });
-
-  if (window.chart) window.chart.destroy();
-
-  window.chart = new Chart(document.getElementById("chart"), {
-    type: "line",
-    data: {
-      labels: years,
-      datasets: [{
-        label: "Medlemsbestand",
-        data: dataPoints,
-        borderColor: "#FF6A00"
-      }]
-    }
-  });
-}
-
-// START
-loadDemo().then(loadData);
-
+const CURRENT_YEAR=2026, YEARS_BACK=6, MIN_GROUP=5;
+const MEMBER_URL='frivillige_dashboard_2026.csv';
+const DEMO_URL='kommune_demografi.csv';
+let memberRows=[], demoRows=[], charts={};
+const $=id=>document.getElementById(id);
+const fmt=n=>(Number(n)||0).toLocaleString('da-DK');
+const pct=n=>((Number(n)||0).toLocaleString('da-DK',{maximumFractionDigits:1,minimumFractionDigits:1})+' %');
+const norm=s=>String(s??'').replace(/^\uFEFF/,'').replace(/[\uFFFD]/g,'ø').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+const clean=s=>String(s??'').replace(/^\uFEFF/,'').trim();
+async function fetchTextSmart(url){const res=await fetch(url,{cache:'no-store'}); if(!res.ok) throw new Error(url+' kunne ikke hentes'); const buf=await res.arrayBuffer(); const decUtf=new TextDecoder('utf-8',{fatal:false}).decode(buf); const bad=(decUtf.match(/ /g)||[]).length; if(bad>2){try{return new TextDecoder('windows-1252').decode(buf)}catch(e){return decUtf}} return decUtf;}
+function detectDelimiter(text){const first=(text.split(/\r?\n/).find(l=>l.trim())||''); const cands=[';',',','\t']; return cands.map(d=>[d,(first.match(new RegExp(d==='\t'?'\\t':d,'g'))||[]).length]).sort((a,b)=>b[1]-a[1])[0][0]||';';}
+function parseCSV(text){text=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n'); const delim=detectDelimiter(text); const rows=[]; let row=[], field='', q=false; for(let i=0;i<text.length;i++){const ch=text[i], next=text[i+1]; if(ch==='"'){ if(q && next==='"'){field+='"'; i++;} else q=!q; } else if(ch===delim && !q){row.push(field); field='';} else if(ch==='\n' && !q){row.push(field); if(row.some(x=>String(x).trim()!=='')) rows.push(row); row=[]; field='';} else field+=ch;} row.push(field); if(row.some(x=>String(x).trim()!=='')) rows.push(row); return rows.map(r=>r.map(clean));}
+function findCol(cols, must, avoid=[]){const ncols=cols.map(norm); const scored=ncols.map((c,i)=>{let score=0; for(const m of must){if(c.includes(norm(m))) score+=10} for(const a of avoid){if(c.includes(norm(a))) score-=20} return [score,i];}).sort((a,b)=>b[0]-a[0]); return scored[0][0]>0?scored[0][1]:-1;}
+function parseYear(v){if(v===null||v===undefined) return null; let s=String(v).trim(); if(!s) return null; const m=s.match(/(19|20)\d{2}/); if(m) return Number(m[0]); const n=Number(s.replace(',','.')); if(Number.isFinite(n)){ if(n>=1900&&n<=2100) return Math.trunc(n); if(n>30000&&n<60000){return new Date(Math.round((n-25569)*86400*1000)).getUTCFullYear();}} return null;}
+function cleanReason(s){s=clean(s); if(!s) return ''; const n=norm(s); if(n.includes('solgt') && (n.includes('bad')||n.includes('båd'))) return 'Solgt båd'; if(n.includes('pris')||n.includes('dyr')) return 'Pris'; if(n.includes('flyt')) return 'Flytning'; if(n.includes('dod')||n.includes('død')) return 'Død'; if(n.includes('bruger')||n.includes('ikke brug')) return 'Bruger ikke medlemskab'; return s.length>48?s.slice(0,45)+'…':s;}
+function deriveRegionFromPost(post){const p=parseInt(String(post).replace(/\D/g,''),10); if(!p) return 'Ukendt'; if((p>=1000&&p<=2999)||(p>=3000&&p<=3699)||(p>=3700&&p<=3799)) return 'Hovedstaden'; if(p>=4000&&p<=4999) return 'Sjælland'; if((p>=5000&&p<=5999)||(p>=6000&&p<=6999)) return 'Syddanmark'; if(p>=7000&&p<=8999) return 'Midtjylland'; if(p>=9000&&p<=9999) return 'Nordjylland'; return 'Ukendt';}
+function kommuneFromBy(by, post){let b=clean(by); const n=norm(b); const postStr=String(post||'').padStart(4,'0'); if(n.startsWith('kobenhavn')) return 'København'; if(n.startsWith('frederiksberg')) return 'Frederiksberg'; if(n==='aarhus c'||n==='aarhus n'||n==='aarhus v'||n==='brabrand'||n==='viby j'||n==='risskov') return 'Aarhus'; if(n==='odense c'||n==='odense m'||n==='odense s'||n==='odense so'||n==='odense nv'||n==='odense no') return 'Odense'; if(n.startsWith('aalborg')) return 'Aalborg'; if(n.startsWith('esbjerg')) return 'Esbjerg'; const match=demoRows.find(d=>norm(d.kommune)===n); if(match) return match.kommune; const demoNames=demoRows.map(d=>d.kommune); const contains=demoNames.find(k=>n.includes(norm(k))||norm(k).includes(n)); if(contains) return contains; return b || ('Postnr. '+postStr);}
+async function loadDemo(){try{const txt=await fetchTextSmart(DEMO_URL); const rows=parseCSV(txt); const cols=rows.shift()||[]; const k=findCol(cols,['kommune']); const r=findCol(cols,['region']); const ind=findCol(cols,['indbyggere']); const kv=findCol(cols,['kvinder']); const ma=findCol(cols,['maend','mænd']); const a0=findCol(cols,['age_0_17','0_17','0-17']); const a18=findCol(cols,['age_18_29','18_29','18-29']); const a30=findCol(cols,['age_30_44','30_44','30-44']); const a45=findCol(cols,['age_45_64','45_64','45-64']); const a65=findCol(cols,['age_65_plus','65']); demoRows=rows.map(rw=>({kommune:clean(rw[k]),region:r>=0?clean(rw[r]):'',indbyggere:Number(String(rw[ind]||'').replace(/\./g,'').replace(',','.'))||0,kvinder:Number(String(rw[kv]||'').replace(',','.'))||0,maend:Number(String(rw[ma]||'').replace(',','.'))||0,a0:Number(String(rw[a0]||'').replace(',','.'))||0,a18:Number(String(rw[a18]||'').replace(',','.'))||0,a30:Number(String(rw[a30]||'').replace(',','.'))||0,a45:Number(String(rw[a45]||'').replace(',','.'))||0,a65:Number(String(rw[a65]||'').replace(',','.'))||0})).filter(x=>x.kommune);}catch(e){console.warn('Demografi ikke indlæst',e); demoRows=[];}}
+async function loadMembers(){const txt=await fetchTextSmart(MEMBER_URL); const rows=parseCSV(txt); const cols=rows.shift()||[]; const postCol=findCol(cols,['post']); const byCol=findCol(cols,['bynavn','by','kommune']); const indCol=findCol(cols,['indmeldt'],['udmeldt']); const udCol=findCol(cols,['udmeldt dato','udmeldt år','udmeldt aar'],['årsag','arsag']); const reasonCol=findCol(cols,['udmeldt årsag','udmeldt arsag','årsag','arsag']); const paidCol=findCol(cols,['sidste salg dato','sidste betalingsår','sidste betalingsaar','betalingsår','betalingsaar','betalt'],['indmeldt','udmeldt']); if(postCol<0||indCol<0) throw new Error('Mangler mindst Postnr og Indmeldt år/dato i CSV-filen.'); let invalid=0, small=0; memberRows=rows.map(r=>{const post=clean(r[postCol]); const by=byCol>=0?clean(r[byCol]):''; const kommune=kommuneFromBy(by,post); const demo=demoRows.find(d=>norm(d.kommune)===norm(kommune)); const region=demo?.region || deriveRegionFromPost(post); const ind=parseYear(r[indCol]); const ud=udCol>=0?parseYear(r[udCol]):null; const paid=paidCol>=0?parseYear(r[paidCol]):null; const reason=reasonCol>=0?cleanReason(r[reasonCol]):''; return {post,by,kommune,region,ind,ud,paid,reason};}).filter(r=>{ if(!r.ind || r.ind> CURRENT_YEAR+1 || (r.ud && r.ud<r.ind)){invalid++; return false;} return true;}); const counts={}; memberRows.forEach(r=>counts[r.kommune]=(counts[r.kommune]||0)+1); memberRows=memberRows.filter(r=>{if(counts[r.kommune]<MIN_GROUP){small++; return false;} return true;}); $('dataInfo').textContent=`Data: ${fmt(rows.length)} rækker behandlet · ${fmt(invalid)} ugyldige frasorteret · ${fmt(small)} rækker skjult pga. minimumsgrænse ${MIN_GROUP}. Kolonner fundet: post=${postCol>=0}, by/kommune=${byCol>=0}, indmeldt=${indCol>=0}, udmeldt=${udCol>=0}, sidste betaling=${paidCol>=0}.`;}
+function selectedKommuner(){return Array.from($('kommuneSelect').selectedOptions).map(o=>o.value);}
+function filteredRows(){const reg=$('regionSelect').value; const sel=selectedKommuner(); return memberRows.filter(r=>(reg==='__ALL__'||r.region===reg) && (sel.length===0||sel.includes(r.kommune)));}
+function years(){const a=[]; for(let y=CURRENT_YEAR-YEARS_BACK+1;y<=CURRENT_YEAR;y++) a.push(y); return a;}
+function renderSelects(){const regions=['Alle regioner',...Array.from(new Set(memberRows.map(r=>r.region).filter(Boolean))).filter(r=>r!=='Ukendt').sort((a,b)=>a.localeCompare(b,'da'))]; $('regionSelect').innerHTML=regions.map((r,i)=>`<option value="${i?'':'__ALL__'}${i?r:''}">${r}</option>`).join(''); updateMunicipalities(); $('regionSelect').addEventListener('change',()=>{updateMunicipalities(); update();}); $('kommuneSelect').addEventListener('change',update);}
+function updateMunicipalities(){const reg=$('regionSelect').value; const list=Array.from(new Set(memberRows.filter(r=>reg==='__ALL__'||r.region===reg).map(r=>r.kommune))).sort((a,b)=>a.localeCompare(b,'da')); $('kommuneSelect').innerHTML=list.map(k=>`<option value="${k}">${k}</option>`).join('');}
+function buildStats(rows){const ys=years(); const paid=rows.filter(r=>r.paid===CURRENT_YEAR).length; const newest=rows.filter(r=>r.ind===CURRENT_YEAR).length; const left=rows.filter(r=>r.ud===CURRENT_YEAR).length; const start=rows.filter(r=>r.ind<=CURRENT_YEAR-1 && (!r.ud || r.ud>=CURRENT_YEAR)).length; const churn=start?left/start*100:0; return {ys, paid,newest,left,start,churn, stock:ys.map(y=>rows.filter(r=>r.ind<=y && (!r.ud || r.ud>y)).length), newByYear:ys.map(y=>rows.filter(r=>r.ind===y).length), leftByYear:ys.map(y=>rows.filter(r=>r.ud===y).length)};}
+function upsertChart(id,type,data,options={}){if(charts[id]) charts[id].destroy(); charts[id]=new Chart($(id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},...options}});}
+function renderProfile(rows){const kommuner=Array.from(new Set(rows.map(r=>r.kommune))); const demos=kommuner.map(k=>demoRows.find(d=>norm(d.kommune)===norm(k))).filter(Boolean); const pop=demos.reduce((s,d)=>s+d.indbyggere,0); const paid=rows.filter(r=>r.paid===CURRENT_YEAR).length; const per1000=pop?paid/pop*1000:0; const kv=pop?demos.reduce((s,d)=>s+d.kvinder*d.indbyggere,0)/pop:0; const ma=pop?demos.reduce((s,d)=>s+d.maend*d.indbyggere,0)/pop:0; const a45=pop?demos.reduce((s,d)=>s+(d.a45+d.a65)*d.indbyggere,0)/pop:0; $('profileBox').innerHTML=`<div class="metric"><div class="mval">${pop?fmt(Math.round(pop)):'–'}</div><div class="mlab">Indbyggere</div></div><div class="metric"><div class="mval">${pop?pct(kv)+' / '+pct(ma):'–'}</div><div class="mlab">Kvinder / mænd</div></div><div class="metric"><div class="mval">${pop?per1000.toLocaleString('da-DK',{maximumFractionDigits:1}):'–'}</div><div class="mlab">Betalende DSRS-medlemmer pr. 1.000 borgere</div></div><div class="metric"><div class="mval">${pop?pct(a45):'–'}</div><div class="mlab">Andel 45+ i befolkningen</div></div>`; $('profileNote').textContent=demos.length?`Demografi vist for ${demos.length} kommune(r).`:'Ingen demografidata matchede det valgte udvalg.';}
+function renderTop(){const reg=$('regionSelect').value; const base=memberRows.filter(r=>reg==='__ALL__'||r.region===reg); const by={}; base.forEach(r=>{(by[r.kommune] ||= []).push(r)}); const rows=Object.entries(by).map(([k,rs])=>{const d=demoRows.find(x=>norm(x.kommune)===norm(k)); const paid=rs.filter(r=>r.paid===CURRENT_YEAR).length; const per=d?.indbyggere?paid/d.indbyggere*1000:0; return {k,paid,new:rs.filter(r=>r.ind===CURRENT_YEAR).length,left:rs.filter(r=>r.ud===CURRENT_YEAR).length,per};}).sort((a,b)=>b.paid-a.paid).slice(0,10); $('topTable').querySelector('tbody').innerHTML=rows.map(r=>`<tr><td>${r.k}</td><td>${fmt(r.paid)}</td><td>${fmt(r.new)}</td><td>${fmt(r.left)}</td><td>${r.per?r.per.toLocaleString('da-DK',{maximumFractionDigits:1}):'–'}</td></tr>`).join('');}
+function update(){const rows=filteredRows(); const st=buildStats(rows); $('kpiPaid').textContent=fmt(st.paid); $('kpiNew').textContent=fmt(st.newest); $('kpiLeft').textContent=fmt(st.left); $('kpiChurn').textContent=pct(st.churn); const kommuner=Array.from(new Set(rows.map(r=>r.kommune))).length; $('kpiPaidSub').textContent=`${kommuner} kommune(r) · Sidste salg dato = 2026`; renderProfile(rows); upsertChart('chartMembers','line',{labels:st.ys,datasets:[{label:'Medlemsbestand ud fra ind-/udmeldelse',data:st.stock,borderColor:'#2EA3F2',backgroundColor:'rgba(46,163,242,.16)',tension:.25,fill:true},{label:'Betalende medlemmer 2026',data:st.ys.map(()=>st.paid),borderColor:'#FF6A00',borderDash:[6,5],pointRadius:0}]}); upsertChart('chartFlow','bar',{labels:st.ys,datasets:[{label:'Nye',data:st.newByYear,backgroundColor:'rgba(46,163,242,.45)'},{label:'Udmeldte',data:st.leftByYear,backgroundColor:'rgba(255,106,0,.45)'}]}); const reasons={}; rows.filter(r=>r.ud===CURRENT_YEAR && r.reason).forEach(r=>reasons[r.reason]=(reasons[r.reason]||0)+1); const reasonEntries=Object.entries(reasons).filter(([_,v])=>v>=MIN_GROUP).sort((a,b)=>b[1]-a[1]).slice(0,8); upsertChart('chartReasons',reasonEntries.length?'bar':'bar',{labels:reasonEntries.length?reasonEntries.map(x=>x[0]):['Ingen registrerede årsager'],datasets:[{label:'Udmeldelser 2026',data:reasonEntries.length?reasonEntries.map(x=>x[1]):[0],backgroundColor:'rgba(255,106,0,.55)'}]},{indexAxis:'y'}); renderTop();}
+async function start(){try{await loadDemo(); await loadMembers(); renderSelects(); $('loadStatus').className='status ok'; $('loadStatus').textContent=`Data indlæst fra ${MEMBER_URL} og ${DEMO_URL}`; update();}catch(e){console.error(e); $('loadStatus').className='status warn'; $('loadStatus').innerHTML='<strong>Kunne ikke indlæse data.</strong><br>'+String(e.message||e);}}
+start();
 </script>
-
 </body>
 </html>
